@@ -2,7 +2,6 @@
   <img src="asset/ex.gif" alt="Example GIF" width="400">
 </p>
 
-
 # qsolv_softener
 
 Charge softening for solute atoms based on solvent environment with QEq (Charge Equilibration) integration.
@@ -25,13 +24,15 @@ Charge softening for solute atoms based on solvent environment with QEq (Charge 
 Using `uv` (recommended):
 
 ```bash
-uv pip install -e .
+uv pip install git+https://github.com/kangmg/qsolv_softener.git
 ```
 
-Or with pip:
+Or git clone:
 
 ```bash
-pip install -e .
+git clone https://github.com/kangmg/qsolv_softener.git
+cd qsolv_softener
+uv pip install -e .
 ```
 
 ## Quick Start
@@ -55,23 +56,12 @@ softener = ChargeSoftener(
     solute_indices=solute_indices,
     solute_charges=solute_charges,
     solvent_charges=solvent_charges,
-    radius=5.0,  # Search radius in Angstroms
+    radius=3.0,  # Search radius in Angstroms
     alpha=0.5     # Mixing parameter
 )
 
-updated_atoms = softener.run()  # Default: apply_qeq=True
+updated_atoms = softener.run(apply_qeq=False)
 final_charges = updated_atoms.get_initial_charges()
-
-# Access filtered atoms (solute + solvent within radius)
-print(f"Filtered system: {len(softener.filtered_atoms)} atoms")
-print(f"Filtered solvent indices: {softener.filtered_solvent_indices}")
-
-# Access neighbor information for each solute atom
-for i, neighbors in enumerate(softener.each_neighbor):
-    print(f"Solute atom {i} has {len(neighbors)} neighbors: {neighbors}")
-
-# Run without QEq (only softening)
-updated_atoms_no_qeq = softener.run(apply_qeq=False)
 ```
 
 ## Weight Functions
@@ -109,40 +99,7 @@ Three weight functions are supported:
 - `alpha`: Mixing parameter, 0 = full softening, 1 = no softening (default: 0.5)
 - `qeq_params`: Custom QEq parameters (default: uses built-in values)
 
-## Examples
 
-See `examples/soften_example.py` for comprehensive examples including:
-- Basic softening with default parameters
-- Gaussian weight function usage
-- Comparing different α values
-- Custom QEq parameters
-
-Run the example:
-
-```bash
-cd examples
-python soften_example.py
-```
-
-Or with uv:
-
-```bash
-uv run examples/soften_example.py
-```
-
-## QEq Parameters
-
-Default QEq parameters are provided for common elements (H, C, N, O, F, P, S, Cl, Br, I). You can override these:
-
-```python
-custom_qeq = {
-    'C': {'chi': 2.6, 'eta': 10.5},
-    'O': {'chi': 3.4, 'eta': 11.5},
-    'H': {'chi': 2.3, 'eta': 13.5}
-}
-
-softener = ChargeSoftener(..., qeq_params=custom_qeq)
-```
 
 ## Filtered Atoms
 
@@ -166,67 +123,3 @@ print(f"Reduced system: {len(filtered_system)} atoms")
 # - Saving only relevant atoms for visualization
 ```
 
-This is particularly useful for large systems where you only want to perform expensive calculations on the atoms that actually contributed to the charge softening.
-
-## Optional QEq Equilibration
-
-The `run()` method accepts an `apply_qeq` parameter to control whether QEq equilibration is applied:
-
-```python
-softener = ChargeSoftener(...)
-
-# Default: apply QEq after softening
-updated_atoms = softener.run(apply_qeq=True)
-
-# Skip QEq: only apply softening
-softened_only = softener.run(apply_qeq=False)
-```
-
-When `apply_qeq=False`, the method returns atoms with only softened charges (without re-equilibration). This can be useful for:
-- Analyzing the effect of softening separately from QEq
-- Faster calculations when charge conservation is not required
-- Custom post-processing workflows
-
-## Neighbor Information for Visualization
-
-The `each_neighbor` attribute provides a list of neighbor indices for each solute atom in order, useful for visualization and analysis:
-
-```python
-softener = ChargeSoftener(...)
-updated_atoms = softener.run()
-
-# each_neighbor[i] contains neighbor indices for solute atom i
-for i, (solute_idx, neighbors) in enumerate(zip(softener.solute_indices, softener.each_neighbor)):
-    if len(neighbors) > 0:
-        print(f"Solute atom {i} (index {solute_idx}): {len(neighbors)} neighbors")
-        print(f"  Neighbor indices: {neighbors}")
-    else:
-        print(f"Solute atom {i} (index {solute_idx}): No neighbors within radius")
-
-# Use for visualization:
-# - Draw spheres around solute atoms showing their influence radius
-# - Highlight neighbor atoms with different colors
-# - Draw connections between solute and neighbor atoms
-# - Analyze local environment around each solute atom
-```
-
-Each element in `each_neighbor` is a list of solvent atom indices within the radius for that solute atom. Empty lists indicate no neighbors were found.
-
-## Charge Conservation
-
-The package guarantees charge conservation within 1e-6 tolerance. The total charge before and after the softening + QEq workflow is preserved.
-
-## Requirements
-
-- Python >= 3.8
-- ASE >= 3.22.0
-- NumPy >= 1.20.0
-- SciPy >= 1.7.0
-
-## License
-
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
