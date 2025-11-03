@@ -54,13 +54,19 @@ softener = ChargeSoftener(
     alpha=0.5     # Mixing parameter
 )
 
-updated_atoms = softener.run()
+updated_atoms = softener.run()  # Default: apply_qeq=True
 final_charges = updated_atoms.get_initial_charges()
 
 # Access filtered atoms (solute + solvent within radius)
 print(f"Filtered system: {len(softener.filtered_atoms)} atoms")
 print(f"Filtered solvent indices: {softener.filtered_solvent_indices}")
-# filtered_atoms can be used for further calculations
+
+# Access neighbor information for each solute atom
+for i, neighbors in enumerate(softener.each_neighbor):
+    print(f"Solute atom {i} has {len(neighbors)} neighbors: {neighbors}")
+
+# Run without QEq (only softening)
+updated_atoms_no_qeq = softener.run(apply_qeq=False)
 ```
 
 ## Weight Functions
@@ -156,6 +162,50 @@ print(f"Reduced system: {len(filtered_system)} atoms")
 ```
 
 This is particularly useful for large systems where you only want to perform expensive calculations on the atoms that actually contributed to the charge softening.
+
+## Optional QEq Equilibration
+
+The `run()` method accepts an `apply_qeq` parameter to control whether QEq equilibration is applied:
+
+```python
+softener = ChargeSoftener(...)
+
+# Default: apply QEq after softening
+updated_atoms = softener.run(apply_qeq=True)
+
+# Skip QEq: only apply softening
+softened_only = softener.run(apply_qeq=False)
+```
+
+When `apply_qeq=False`, the method returns atoms with only softened charges (without re-equilibration). This can be useful for:
+- Analyzing the effect of softening separately from QEq
+- Faster calculations when charge conservation is not required
+- Custom post-processing workflows
+
+## Neighbor Information for Visualization
+
+The `each_neighbor` attribute provides a list of neighbor indices for each solute atom in order, useful for visualization and analysis:
+
+```python
+softener = ChargeSoftener(...)
+updated_atoms = softener.run()
+
+# each_neighbor[i] contains neighbor indices for solute atom i
+for i, (solute_idx, neighbors) in enumerate(zip(softener.solute_indices, softener.each_neighbor)):
+    if len(neighbors) > 0:
+        print(f"Solute atom {i} (index {solute_idx}): {len(neighbors)} neighbors")
+        print(f"  Neighbor indices: {neighbors}")
+    else:
+        print(f"Solute atom {i} (index {solute_idx}): No neighbors within radius")
+
+# Use for visualization:
+# - Draw spheres around solute atoms showing their influence radius
+# - Highlight neighbor atoms with different colors
+# - Draw connections between solute and neighbor atoms
+# - Analyze local environment around each solute atom
+```
+
+Each element in `each_neighbor` is a list of solvent atom indices within the radius for that solute atom. Empty lists indicate no neighbors were found.
 
 ## Charge Conservation
 

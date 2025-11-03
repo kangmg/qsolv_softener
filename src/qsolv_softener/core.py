@@ -8,7 +8,7 @@ from typing import Dict, Optional, List, Union
 from .utils import (
     get_weight_function,
     compute_neighbor_list,
-    apply_qeq,
+    apply_qeq as apply_qeq_equilibration,
     validate_inputs,
     DEFAULT_QEQ_PARAMS
 )
@@ -31,6 +31,7 @@ class ChargeSoftener:
         qeq_params: Dictionary of QEq parameters per element
         filtered_solvent_indices: Indices of solvent atoms within radius (set after run)
         filtered_atoms: Atoms object with solute + filtered solvent (set after run)
+        each_neighbor: List of neighbor indices for each solute atom (set after run)
     """
     
     def __init__(
@@ -98,11 +99,12 @@ class ChargeSoftener:
         
         self.filtered_solvent_indices = None
         self.filtered_atoms = None
+        self.each_neighbor = None
     
     def _soften_charges(self) -> np.ndarray:
         """
         Apply charge softening to solute atoms based on solvent neighbors.
-        Also collects filtered solvent indices within radius.
+        Also collects filtered solvent indices within radius and each_neighbor info.
         
         Returns:
             Array of softened charges for all atoms (solvent charges unchanged)
@@ -121,13 +123,16 @@ class ChargeSoftener:
         )
         
         filtered_solvent_set = set()
+        each_neighbor_list = []
         
         for i, solute_idx in enumerate(self.solute_indices):
             if len(neighbor_indices[i]) == 0:
+                each_neighbor_list.append([])
                 continue
             
             neighbor_solvent_indices = self.solvent_indices[neighbor_indices[i]]
             filtered_solvent_set.update(neighbor_solvent_indices)
+            each_neighbor_list.append(neighbor_solvent_indices.tolist())
             
             neighbor_charges = self.initial_charges[neighbor_solvent_indices]
             distances = neighbor_distances[i]
@@ -140,13 +145,17 @@ class ChargeSoftener:
             softened_charges[solute_idx] = softened_charge
         
         self.filtered_solvent_indices = np.array(sorted(filtered_solvent_set))
+        self.each_neighbor = each_neighbor_list
         
         return softened_charges
     
-    def run(self) -> Atoms:
+    def run(self, apply_qeq: bool = True) -> Atoms:
         """
-        Execute the charge softening and QEq equilibration workflow.
+        Execute the charge softening and optionally QEq equilibration workflow.
         Creates filtered_atoms containing only solute + solvent atoms within radius.
+        
+        Args:
+            apply_qeq: Whether to apply QEq equilibration after softening (default: True)
         
         Returns:
             Updated ASE Atoms object with new charges set via set_initial_charges()
@@ -156,12 +165,15 @@ class ChargeSoftener:
         """
         softened_charges = self._soften_charges()
         
-        final_charges = apply_qeq(
-            self.atoms,
-            softened_charges,
-            self.qeq_params,
-            self.total_charge
-        )
+        if apply_qeq:
+            final_charges = apply_qeq_equilibration(
+                self.atoms,
+                softened_charges,
+                self.qeq_params,
+                self.total_charge
+            )
+        else:
+            final_charges = softened_charges
         
         updated_atoms = self.atoms.copy()
         updated_atoms.set_initial_charges(final_charges)

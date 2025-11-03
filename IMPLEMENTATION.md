@@ -12,7 +12,11 @@ The `qsolv_softener` package implements a two-stage charge modification algorith
 
 2. **Charge Equilibration (QEq) Stage**: After softening, we apply QEq to the entire system (solute + solvent) to re-equilibrate charges while preserving the total system charge. This uses electronegativity (χ) and hardness (η) parameters per element.
 
-3. **Filtered Atoms Creation**: After QEq, the algorithm creates a `filtered_atoms` object containing only the solute atoms and the solvent atoms that were within the specified radius. This provides a reduced system for further analysis or calculations.
+3. **Filtered Atoms Creation**: After QEq (or softening if QEq is skipped), the algorithm creates:
+   - A `filtered_atoms` object containing only the solute atoms and the solvent atoms that were within the specified radius
+   - An `each_neighbor` list containing neighbor indices for each solute atom in order (empty list if no neighbors)
+   
+   QEq can be optionally disabled by calling `run(apply_qeq=False)` to get only softened charges without re-equilibration.
 
 ## Weight Function Details
 
@@ -195,6 +199,41 @@ updated_atoms = softener.run()
 initial_charge = np.sum(solute_charges) + np.sum(solvent_charges)
 final_charge = np.sum(updated_atoms.get_initial_charges())
 assert abs(initial_charge - final_charge) < 1e-6, "Charge not conserved!"
+```
+
+### Skipping QEq Equilibration
+
+```python
+softener = ChargeSoftener(...)
+
+# Run with QEq (default)
+updated_with_qeq = softener.run(apply_qeq=True)
+
+# Run without QEq (only softening)
+updated_no_qeq = softener.run(apply_qeq=False)
+
+# Compare softened vs equilibrated charges
+softened_charges = softener.get_softened_charges()
+```
+
+### Accessing Neighbor Information
+
+```python
+softener = ChargeSoftener(...)
+updated_atoms = softener.run()
+
+# Each neighbor list for visualization
+for i, neighbors in enumerate(softener.each_neighbor):
+    solute_idx = softener.solute_indices[i]
+    print(f"Solute atom {solute_idx}: {len(neighbors)} neighbors within {softener.radius} Å")
+    if len(neighbors) > 0:
+        print(f"  Neighbor indices: {neighbors}")
+
+# Access filtered solvent indices
+print(f"Filtered solvent atoms: {softener.filtered_solvent_indices}")
+
+# Access filtered atoms object
+print(f"Filtered system: {len(softener.filtered_atoms)} atoms")
 ```
 
 ## QEq Parameter Handling
