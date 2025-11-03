@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="asset/ex.gif" alt="Example GIF" width="400">
+</p>
+
+
 # qsolv_softener
 
 Charge softening for solute atoms based on solvent environment with QEq (Charge Equilibration) integration.
