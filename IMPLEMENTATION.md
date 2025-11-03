@@ -8,9 +8,11 @@ The `qsolv_softener` package implements a two-stage charge modification algorith
    ```
    new_q_solute = α * original_q_solute + (1 - α) * weighted_avg_q_solvent
    ```
-   Solvent charges remain **unchanged** during this stage, acting as a fixed background field.
+   Solvent charges remain **unchanged** during this stage, acting as a fixed background field. During this stage, the algorithm also collects all solvent atom indices that fall within the radius of any solute atom.
 
 2. **Charge Equilibration (QEq) Stage**: After softening, we apply QEq to the entire system (solute + solvent) to re-equilibrate charges while preserving the total system charge. This uses electronegativity (χ) and hardness (η) parameters per element.
+
+3. **Filtered Atoms Creation**: After QEq, the algorithm creates a `filtered_atoms` object containing only the solute atoms and the solvent atoms that were within the specified radius. This provides a reduced system for further analysis or calculations.
 
 ## Weight Function Details
 
@@ -72,6 +74,7 @@ Atoms Object    Solute Indices    Charge Arrays
               | Softening Loop    |
               | For each solute:  |
               |  - Find neighbors |
+              |  - Collect indices|
               |  - Compute weights|
               |  - Mix charges    |
               +---------+---------+
@@ -86,8 +89,16 @@ Atoms Object    Solute Indices    Charge Arrays
                         |
                         v
               +---------+---------+
+              | Create Filtered   |
+              | Atoms Object      |
+              | (solute+filtered) |
+              +---------+---------+
+                        |
+                        v
+              +---------+---------+
               | Updated Atoms     |
               | (new charges)     |
+              | + filtered_atoms  |
               +-------------------+
 ```
 
@@ -117,6 +128,10 @@ softener = ChargeSoftener(
 
 updated_atoms = softener.run()
 print(f"New charges: {updated_atoms.get_initial_charges()}")
+
+# Access filtered atoms (solute + solvent within radius)
+print(f"Filtered system: {len(softener.filtered_atoms)} atoms")
+print(f"Filtered solvent indices: {softener.filtered_solvent_indices}")
 ```
 
 ### Using Gaussian Weight Function

@@ -230,6 +230,44 @@ def example_custom_qeq_params():
     print("✓ Charge conserved within tolerance")
 
 
+def example_filtered_atoms():
+    """Example 5: Accessing filtered atoms (solute + solvent within radius)."""
+    print("\n" + "="*70)
+    print("Example 5: Filtered Atoms (Solute + Solvent within Radius)")
+    print("="*70)
+    
+    atoms, solute_indices, solute_charges, solvent_charges = create_methanol_water_system()
+    
+    print(f"\nOriginal system:")
+    print(f"  Total atoms: {len(atoms)}")
+    print(f"  Solute atoms: {len(solute_indices)}")
+    print(f"  Solvent atoms: {len(solvent_charges)}")
+    
+    softener = ChargeSoftener(
+        atoms=atoms,
+        solute_indices=solute_indices,
+        solute_charges=solute_charges,
+        solvent_charges=solvent_charges,
+        radius=5.0
+    )
+    
+    updated_atoms = softener.run()
+    
+    print(f"\nFiltered system (solute + solvent within {softener.radius} Å):")
+    print(f"  Total atoms: {len(softener.filtered_atoms)}")
+    print(f"  Solute atoms: {len(solute_indices)}")
+    print(f"  Filtered solvent atoms: {len(softener.filtered_solvent_indices)}")
+    print(f"  Filtered solvent indices: {softener.filtered_solvent_indices}")
+    print(f"  Chemical symbols: {softener.filtered_atoms.get_chemical_symbols()}")
+    
+    print(f"\nFiltered atoms object can be used for further analysis or calculations:")
+    print(f"  - Reduced system size for expensive computations")
+    print(f"  - Only atoms that contributed to charge softening")
+    print(f"  - Charges already equilibrated with QEq")
+    
+    print(f"\n✓ Filtered atoms created successfully")
+
+
 def main():
     """Run all examples."""
     print("\n" + "="*70)
@@ -241,6 +279,7 @@ def main():
         example_gaussian_weighting()
         example_parameter_comparison()
         example_custom_qeq_params()
+        example_filtered_atoms()
         
         print("\n" + "="*70)
         print("All examples completed successfully!")

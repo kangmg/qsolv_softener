@@ -13,6 +13,7 @@ Charge softening for solute atoms based on solvent environment with QEq (Charge 
 - **Flexible parameterization**: Customizable radius, mixing parameter (α), and weight function parameters
 - **ASE integration**: Works seamlessly with ASE Atoms objects
 - **Efficient neighbor search**: Uses KDTree for O(log N) neighbor queries
+- **Filtered atoms**: Automatically creates a reduced system containing only solute + solvent atoms within the specified radius
 
 ## Installation
 
@@ -55,6 +56,11 @@ softener = ChargeSoftener(
 
 updated_atoms = softener.run()
 final_charges = updated_atoms.get_initial_charges()
+
+# Access filtered atoms (solute + solvent within radius)
+print(f"Filtered system: {len(softener.filtered_atoms)} atoms")
+print(f"Filtered solvent indices: {softener.filtered_solvent_indices}")
+# filtered_atoms can be used for further calculations
 ```
 
 ## Weight Functions
@@ -126,6 +132,30 @@ custom_qeq = {
 
 softener = ChargeSoftener(..., qeq_params=custom_qeq)
 ```
+
+## Filtered Atoms
+
+After running the softening workflow, the `ChargeSoftener` object provides access to a filtered system containing only the solute atoms and the solvent atoms that were within the specified radius:
+
+```python
+softener = ChargeSoftener(...)
+updated_atoms = softener.run()
+
+# Access filtered solvent indices (within radius)
+print(softener.filtered_solvent_indices)
+
+# Access filtered atoms object (solute + filtered solvent)
+filtered_system = softener.filtered_atoms
+print(f"Reduced system: {len(filtered_system)} atoms")
+
+# The filtered_atoms object is a regular ASE Atoms object
+# with charges already equilibrated - useful for:
+# - Further QM calculations on a reduced system
+# - Analysis of the local environment
+# - Saving only relevant atoms for visualization
+```
+
+This is particularly useful for large systems where you only want to perform expensive calculations on the atoms that actually contributed to the charge softening.
 
 ## Charge Conservation
 
