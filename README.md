@@ -4,11 +4,15 @@
 
 # qsolv_softener
 
-Charge softening for solute atoms based on solvent environment with QEq (Charge Equilibration) integration.
+Charge softening for solute atoms based on solvent environment. (optionally with QEq)
 
 ## Overview
 
 `qsolv_softener` is a Python package that softens partial charges on solute atoms by incorporating information from neighboring solvent atoms within a specified radius. After softening, it applies Charge Equilibration (QEq) to maintain the total system charge while allowing charges to re-equilibrate based on electronegativity and hardness parameters.
+
+<p align="center">
+  <img src="asset/summary.png" alt="concept figure" width="400">
+</p>
 
 ## Features
 
